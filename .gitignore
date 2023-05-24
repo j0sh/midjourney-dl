@@ -1,0 +1,13 @@
+
+# working files
+DIST_MANIFEST.temp
+writer.js
+dist/
+fflate*
+*.zip
+
+# vim
+*.swp
+
+# macos crud
+.DS_STORE
