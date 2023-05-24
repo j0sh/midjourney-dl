@@ -12,10 +12,14 @@ dist: $(js) $(png) manifest.json
 	ls dist > DIST_MANIFEST.temp
 	diff -u DIST_MANIFEST DIST_MANIFEST.temp
 
-transfix-mj-ext-$(version).zip: dist
+check_zip:
+	test -f releases/transfix-mj-ext-$(version).zip && echo "Zip exists for v$(version), bump version" && exit 1 || echo "Building zip for v$(version)"
+
+releases/transfix-mj-ext-$(version).zip: check_zip dist
+	mkdir -p releases
 	zip -j $@ dist/*
 
-release: transfix-mj-ext-$(version).zip
+release: releases/transfix-mj-ext-$(version).zip
 
 watch:
 	while true; do $(MAKE) -q || $(MAKE); sleep 0.5; done

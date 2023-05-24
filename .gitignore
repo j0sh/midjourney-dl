@@ -3,8 +3,8 @@
 DIST_MANIFEST.temp
 writer.js
 dist/
+releases/
 fflate*
-*.zip
 
 # vim
 *.swp
