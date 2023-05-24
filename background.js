@@ -51,6 +51,7 @@ chrome.contextMenus.removeAll(function() {
     id: AllImagesContextMenuID,
     title: "Save All Images On Page",
     contexts:["page", "image"],  // ContextType
+    documentUrlPatterns: ["https://www.midjourney.com/*"],
   });
 })
 
