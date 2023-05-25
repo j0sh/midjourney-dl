@@ -35,7 +35,6 @@ function jobIdFromLocation() {
 }
 
 async function fetchURLWithParams(url, params) {
-
   for (const [k, v] of Object.entries(params)) {
     url.searchParams.set(k, v);
   }
@@ -45,7 +44,6 @@ async function fetchURLWithParams(url, params) {
     log("Unable to retrieve recent jobs for", url, resp);
     return undefined;
   }
-  log("all ok", resp);
   return resp.json();
 }
 
@@ -95,16 +93,12 @@ async function getJobs () {
       "refreshApi": "0",
       "searchType":"vector",
       "service": null,
-      "user_id_ranked_score":"0,4,5",
+      "user_id_ranked_score":"0,4,5", // filter emojis (unrated, liked loved)
       "_ql":"todo",
       "_qurl":window.location.href
     };
-    for ([k, v] of Object.entries(params)) {
-      searchURL.searchParams.append(k, v);
-    }
-    console.log("Requesting", searchURL);
-    const zz = await fetch(searchURL);
-    const body = await zz.json();
+    const body = await fetchURLWithParams(searchURL, params);
+    if (!body) return [];
     jobs.push(...body);
     log("Jobs are now", jobs);
   } else if (pathname === "/app/feed/") {
@@ -141,13 +135,8 @@ async function getJobs () {
       log("In user homepage");
       // first get user id
       const userSessionURL = new URL("https://www.midjourney.com/api/auth/session/");
-      const userInfoResp = await fetch(userSessionURL);
-      if (!userInfoResp.ok) {
-        log("Error fetching user info", userInfoResp);
-        return [];
-      }
-      const userInfo = await userInfoResp.json();
-      log("Got user info");
+      const userInfo = await fetchURLWithParams(userSessionURL, {});
+      if (!userInfo) return [];
       // at the user's homepage
       const recentJobsURL = new URL("https://www.midjourney.com/api/app/recent-jobs/");
       const params = {
@@ -162,19 +151,12 @@ async function getJobs () {
         "service":null,
         "type":"all",
         "userId": userInfo.user.id,
-        "user_id_ranked_score":null,
+        "user_id_ranked_score":null, // null as of 5/23/2023
         "_ql":"todo",
         "_qurl":window.location.href
       };
-      for (const [k, v] of Object.entries(params)) {
-        recentJobsURL.searchParams.append(k, v);
-      }
-      const recentJobsResp = await fetch(recentJobsURL);
-      if (!recentJobsResp.ok) {
-        log("Unable to retrieve recent jobs", recentJobsResp);
-        return [];
-      }
-      recentJobs = await recentJobsResp.json();
+      const recentJobs = await fetchURLWithParams(recentJobsURL, params);
+      if (!recentJobs) return [];
       jobs.push(...recentJobs);
       log("Set recent jobs");
   } else {
