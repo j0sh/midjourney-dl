@@ -34,6 +34,21 @@ function jobIdFromLocation() {
   return undefined;
 }
 
+async function fetchURLWithParams(url, params) {
+
+  for (const [k, v] of Object.entries(params)) {
+    url.searchParams.set(k, v);
+  }
+  log("fetching", url);
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    log("Unable to retrieve recent jobs for", url, resp);
+    return undefined;
+  }
+  log("all ok", resp);
+  return resp.json();
+}
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -87,6 +102,34 @@ async function getJobs () {
     const body = await zz.json();
     jobs.push(...body);
     log("Jobs are now", jobs);
+  } else if (pathname === "/app/feed/") {
+    const recentJobsURL = new URL("https://www.midjourney.com/api/app/recent-jobs/");
+    const params = {
+      "amount": "35",
+      "dedupe":"true",
+      "jobStatus":"completed",
+      "jobType":"upscale",
+      "orderBy":"hot",
+      "refreshApi":"0",
+      "searchType":null,
+      "service":"main",
+      "user_id_ranked_score":"0,4,5", // filter emojis (unrated, liked loved)
+      "_ql":"todo",
+      "_qurl":window.location.href
+    };
+    const recentJobs = await fetchURLWithParams(recentJobsURL, params);
+    log("recent jobs being", recentJobs);
+    if (!recentJobs) return [];
+    jobs.push(...recentJobs);
+
+    // get second page
+    params["page"] = "2";
+    const recentJobs2 = await fetchURLWithParams(recentJobsURL, params);
+    if (!recentJobs2) return [];
+    jobs.push(...recentJobs2);
+
+    log("Set recent jobs based on feed");
+
   } else if (pathname === "/app/search/") {
     log("TODO search");
   } else if (pathname === "/app/") {
