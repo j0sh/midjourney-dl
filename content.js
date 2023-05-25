@@ -84,15 +84,20 @@ async function getJobs () {
     jobs.push(job);
 
     const searchURL = new URL("https://www.midjourney.com/api/app/vector-search/");
-    const imgPath = job.image_paths[0].replace("https://storage.googleapis.com/dream-machines-output", "https://cdn.midjourney.com");
+    const imgPath = job.image_paths[0].replace("https://storage.googleapis.com/dream-machines-output", "https://cdn.midjourney.com").replace(/\.png$/i, ".webp");
     const params = {
       "amount": "50",
       "dedupe": "true",
       "jobStatus":"completed",
       "jobType":"upscale",
       "orderBy":"new",
+      "prompt": imgPath,
+      "refreshApi": "0",
       "searchType":"vector",
-      "prompt": imgPath
+      "service": null,
+      "user_id_ranked_score":"0,4,5",
+      "_ql":"todo",
+      "_qurl":window.location.href
     };
     for ([k, v] of Object.entries(params)) {
       searchURL.searchParams.append(k, v);
