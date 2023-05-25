@@ -296,6 +296,10 @@ document.onmouseover = function(e) {
 async function getJob(jobId){
   try {
     log("Getting job status for", jobId);
+    if (Array.isArray(jobId) && jobId.length === 0) {
+      log("No jobs requested; exiting");
+      return;
+    }
     const jobIds = Array.isArray(jobId) ? jobId : [ jobId ]
     const jobStatusURL = "https://www.midjourney.com/api/app/job-status/";
     const jobStatus = await fetch(jobStatusURL, {
