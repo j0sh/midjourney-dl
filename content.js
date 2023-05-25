@@ -311,7 +311,10 @@ async function getJob(jobId){
       log("Unable to fetch job status");
       return undefined;
     }
-    return jobStatus.json();
+    const j = await jobStatus.json();
+    jobs.push(...j);
+    log("Added to jobs:", j);
+    return j;
   } catch(e) {
     console.error("Error getting job status for ", jobId, e);
     return undefined;
