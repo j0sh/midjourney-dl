@@ -58,6 +58,10 @@ function removeOverlay(overlayId){
   });
   addOverlay(overlayId);
   const writable = await fileHandle.createWritable();
+  const file = await fileHandle.getFile();
+  const fileParts = file.name.split("."); // accommodate filenames w multiple dots
+  if (fileParts.length > 1) fileParts.pop(); // remove .zip extension
+  const fileName = fileParts.join(".");
   const zipper = new fflate.Zip((err, dat, final) => {
     if (err) {
       log("zip error", err);
@@ -95,7 +99,7 @@ function removeOverlay(overlayId){
       const imageData = await imageUrlToBase64(imageURL)
       const response = await chrome.runtime.sendMessage({job: job, imageURL: imageURL, imageDataURL: imageData});
       log("res", job.id, response.res);
-      const imageFile = new fflate.ZipPassThrough(zipName+"/"+response.filename);
+      const imageFile = new fflate.ZipPassThrough(fileName+"/"+response.filename);
       zipper.add(imageFile);
       const enrichedImage = new Uint8Array(await (await fetch(response.enrichedImage)).arrayBuffer());
       imageFile.push(enrichedImage, true);
