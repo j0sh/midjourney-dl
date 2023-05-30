@@ -299,7 +299,8 @@ async function getJob(jobId){
       return undefined;
     }
     const j = await jobStatus.json();
-    jobs.push(...j);
+    if (Array.isArray(j)) jobs.push(...j);
+    else jobs.push(j);
     log("Added to jobs:", j);
     return j;
   } catch(e) {
