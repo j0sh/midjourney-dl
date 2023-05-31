@@ -30,6 +30,13 @@ function jobIdFromLocation() {
       return undefined;
     }
     return jobId;
+  } else if (document.location.search != "") {
+    // sometimes have the jobid as a URL query param, eg
+    // https://www.midjourney.com/app/users/c930bb13-debe-4833-8240-b6e5d52ff007/archive/?jobId=f2760587-53ee-4bb3-a6d3-031aab48bf07
+    const searchParams = new URLSearchParams(document.location.search)
+    const jobId = searchParams.get("jobId");
+    if (!jobId) return undefined;
+    return jobId;
   }
   return undefined;
 }
@@ -242,7 +249,7 @@ observer.observe(document.body, { childList: true, subtree: true });
 function attachModalMouseoverHandler(imgElement, idx) {
   const jobId = jobIdFromLocation();
   if (!jobId) {
-    log("No job ID found; not attaching mouseover handler");
+    log("No job ID found; not attaching mouseover handler. Location", document.location);
     return;
   }
   imgElement.setAttribute("data-job-id", jobId);
