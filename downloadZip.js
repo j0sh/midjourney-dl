@@ -1,7 +1,7 @@
 
 function addOverlay(overlayId){
   const d = document.createElement("div");
-  d.style = "position: fixed; top: 0; right: 0; background-color: rgb(248 113 113);  padding: 1em; z-index: 100";
+  d.style = "position: fixed; top: 0; right: 0; background-color: rgb(248 113 113);  padding: 1em; z-index: 1000";
   d.innerText = "Preparing Download ...";
   d.id = overlayId;
   document.body.appendChild(d);
