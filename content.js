@@ -6,7 +6,8 @@ const log = window.console.log.bind(window.console, 'Transfix: %s');
 log("Hello from the Transfix metadata embed for Midjourney!");
 
 const imageUrlToBase64 = async url => {
-  const response = await fetch(url);
+  const cdnUrl = url.replace("storage.googleapis.com/dream-machines-output", "cdn.midjourney.com");
+  const response = await fetch(cdnUrl);
   const blob = await response.blob();
   return new Promise((onSuccess, onError) => {
     try {
@@ -57,6 +58,39 @@ async function fetchURLWithParams(url, params) {
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+async function getArchiveDateRanges() {
+  // get date ranges for archive page
+  //
+  // path could either be /app/archive/ (for self)
+  // or /app/users/<uuid>/archive/ (for others)
+  // we need to handle both types but they are otherwise the same
+  const pathname = window.location.pathname;
+  if (!pathname.endsWith("/archive/")) {
+    log("Attempting to fetch archive data from non-archive page");
+    return undefined;
+  }
+  const nextData = JSON.parse(document.getElementById("__NEXT_DATA__").innerText);
+  if (!nextData) {
+    log("No nextdata found");
+    return undefined;
+  }
+  if (nextData.props && nextData.props.pageProps && nextData.props.pageProps.days) {
+    // usually happens if the archive page is loaded directly
+    // rather incrementally rendered via naviation from another page
+    return nextData.props.pageProps.days;
+  }
+  const buildId = nextData.buildId;
+  if (!buildId) {
+    log("Could not find build ID");
+    return undefined;
+  }
+  const suffix = pathname.replace(/archive\/?$/, "archive.json");
+  const url = `https://www.midjourney.com/_next/data/${buildId}${suffix}`
+  const body = await fetchURLWithParams(url, {});
+  return body.pageProps.days;
+}
+
 const jobs = [];
 async function getJobs () {
   const pathname = window.location.pathname;
