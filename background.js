@@ -72,7 +72,7 @@ async function embedMetadata(request, sender, sendResponse){
     "dc.subject" : j.prompt || "",
     "midjourney.midjourneyJobData" : JSON.stringify(j),
     "xmp.BaseURL" : request.imageURL,
-    "xmp.CreateDate" : new Date().toISOString().replaceAll(/[TZ]/ig, ' ').trimEnd(),
+    "xmp.CreateDate" : new Date(j.enqueue_time + " UTC").toISOString().replaceAll(/[TZ]/ig, ' ').trimEnd(),
     "xmp.CreatorTool" : "Midjourney",
   }
   const p = w.writer(imageData, dc);
@@ -82,7 +82,9 @@ async function embedMetadata(request, sender, sendResponse){
   const ext = imageURL.split(".").at(-1);
   const fname = `${name.substring(0, 100 - j.id.length - 1)}_${j.id}.${ext}`;
 
-  sendResponse({res: "ok", enrichedImage: pData, filename: fname});
+  const mtime = j.enqueue_time;
+
+  sendResponse({res: "ok", enrichedImage: pData, filename: fname, mtime: mtime});
 }
 
 let mouseOverImage = "";

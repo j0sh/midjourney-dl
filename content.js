@@ -371,6 +371,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({res: "ok"});
 
     // fake the download
+    // NB: unfortunately we can't set the lastModified time of a File blob
+    // (to preserve file creation timestamps) because Chrome doesn't pass
+    // lastModified through to URL.createObjectURL
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=4574
     const enrichedImage = await (await fetch(response.enrichedImage)).blob();
     var e = document.createElement('a');
     e.href = URL.createObjectURL(enrichedImage);

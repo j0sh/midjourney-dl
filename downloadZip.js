@@ -377,6 +377,7 @@ async function addDownloadBar(overlayId){
         await Promise.all(processors.map(async (z) => {
           for await (const res of z) {
             const imageFile = new fflate.ZipPassThrough(zipFilename+"/"+res.filename);
+            imageFile.mtime = new Date(res.mtime + " UTC");
             zipper.add(imageFile);
             const enrichedImage = new Uint8Array(await (await fetch(res.enrichedImage)).arrayBuffer());
             imageFile.push(enrichedImage, true);
@@ -530,6 +531,7 @@ async function addDownloadBar(overlayId){
       const response = await chrome.runtime.sendMessage({job: job, imageURL: imageURL, imageDataURL: imageData});
       log("res", job.id, response.res);
       const imageFile = new fflate.ZipPassThrough(fileName+"/"+response.filename);
+      imageFile.mtime = new Date(response.mtime + " UTC");
       zipper.add(imageFile);
       const enrichedImage = new Uint8Array(await (await fetch(response.enrichedImage)).arrayBuffer());
       imageFile.push(enrichedImage, true);
