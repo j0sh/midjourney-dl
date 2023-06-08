@@ -90,6 +90,14 @@ async function addDownloadBar(overlayId){
     }
     return `${d.y}-${pad(d.m)}-${pad(d.d)}`
   }
+  const today = dateObjToDateString((() => {
+    const d = new Date();
+    return {
+      y: d.getUTCFullYear(),
+      m: d.getUTCMonth() + 1,
+      d: d.getDate()
+    };
+  })());
   const startDate = dateObjToDateString(dateRanges[0]);
   const endDate = dateObjToDateString(dateRanges[dateRanges.length-1]);
 
@@ -97,7 +105,7 @@ async function addDownloadBar(overlayId){
   start.type = "date";
   start.name = "transfixDateRangeStart";
   start.value  = startDate;
-  start.max = startDate;
+  start.max = today;
   start.min = endDate;
   start.setAttribute("form",  overlayId+"_form");
 
@@ -105,15 +113,16 @@ async function addDownloadBar(overlayId){
   end.type = "date";
   end.name = "transfixDateRangeEnd";
   end.value  = endDate;
-  end.max = startDate;
+  end.max = today;
   end.min = endDate;
   end.setAttribute("form", overlayId+"_form");
 
+  const downloadButtonText = "Download Jobs";
   const buttonClasses = "text-slate-400 hover:text-slate-100 hover:underline";
   const downloadButton = document.createElement("button");
-  downloadButton.innerText = "Download Jobs";
+  downloadButton.innerText = downloadButtonText;
   downloadButton.className = "pr-2 mr-2 hover:underline";
-  downloadButton.style = "border-right: 1px solid #11182f";
+  downloadButton.style = "border-right: 1px solid #11182f; white-space: pre";
   downloadButton.setAttribute("form", overlayId+"_form");
 
   const settingsButton = (() => {
@@ -278,6 +287,21 @@ async function addDownloadBar(overlayId){
             days.push(d);
           }
         });
+        if (days.length <= 0) {
+          const padSides = ((str, target) => {
+            const diff = target.length - str.length;
+            if (diff <= 0) return;
+            const eachSide = diff / 2;
+            const padOne = diff % 2;
+            const s = str.padStart(str.length + diff, " ");
+            return s.padEnd(s.length + diff + padOne, " ");
+          });
+          downloadButton.innerText = padSides("No Jobs", downloadButtonText);
+          setTimeout(() => {
+            downloadButton.innerText = downloadButtonText;
+          }, 2500);
+          return;
+        }
         progressState.totalDays = days.length;
         for (const [name, value] of formData) {
           log(name, ":", value);
