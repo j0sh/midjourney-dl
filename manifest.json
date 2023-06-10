@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Download Midjourney Images And Prompts",
-  "description": "Download Midjourney images with embedded prompts",
+  "description": "Download Midjourney images with prompts in metadata",
   "version": "1.3",
   "action": {
     "default_icon": "icon-128.png",
