@@ -100,6 +100,7 @@ async function storeMouseOver(request, sender, sendResponse) {
       id: SingleImageContextMenuID,
       title: "Save Single Image",
       contexts:["page", "image"],  // ContextType
+      documentUrlPatterns: ["https://www.midjourney.com/*"],
     });
   }
   sendResponse(); // send empty response to suppress errors in the console
