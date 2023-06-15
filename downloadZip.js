@@ -95,7 +95,7 @@ async function addDownloadBar(overlayId){
     return {
       y: d.getUTCFullYear(),
       m: d.getUTCMonth() + 1,
-      d: d.getDate()
+      d: d.getUTCDate()
     };
   })());
   const startDate = dateObjToDateString(dateRanges[0]);
