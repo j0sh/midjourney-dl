@@ -45,6 +45,7 @@ function processJob({imageFormat, isDiffusion, progressState}) {
   return async function*(iterator) {
     for await (const jobInfo of iterator) {
       if (progressState.cancelClicked) return;
+      try {
       const imageURL = setDiffusion(setExtension(jobInfo.image_paths[0]));
       const imageData = await imageUrlToBase64(imageURL);
       const resp = await chrome.runtime.sendMessage({
@@ -52,6 +53,9 @@ function processJob({imageFormat, isDiffusion, progressState}) {
       });
       log("embed", jobInfo.id, resp.res);
       yield resp;
+      } catch(e) {
+        yield { error: e }
+      }
     }
   }
 }
@@ -401,6 +405,13 @@ async function addDownloadBar(overlayId){
 
         await Promise.all(processors.map(async (z) => {
           for await (const res of z) {
+            if (res.error) {
+              log("Got error: ", res.error);
+              // TODO write to an error manifest?
+              progressState.processedImages += 1;
+              setProgress(progressState);
+              continue;
+            }
             const imageFile = new fflate.ZipPassThrough(zipFilename+"/"+res.filename);
             imageFile.mtime = new Date(res.mtime + " UTC");
             zipper.add(imageFile);
