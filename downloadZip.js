@@ -327,9 +327,10 @@ async function addDownloadBar(overlayId){
             setProgress(progressState);
             pendingJobs = pendingJobs.concat(filteredDayJobs);
             // TODO check against existing jobs, avoid fetching info
-            while (pendingJobs.length >= 35) {
+            const maxJobs = 45;
+            while (pendingJobs.length >= maxJobs) {
               if (progressState.cancelClicked) return;
-              const jobsToCheck = pendingJobs.splice(0, 35);
+              const jobsToCheck = pendingJobs.splice(0, maxJobs);
               const j = [... await getJob(jobsToCheck.map(j => j.id))];
               progressState.processedJobs += j.length;
               setProgress(progressState);
