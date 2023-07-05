@@ -309,14 +309,15 @@ async function addDownloadBar(overlayId){
 
         const isUpscale = jobType === "upscale" || jobType === "both";
         const isDiffusion = jobType === "grid" || jobType === "both";
+        const isBoth = jobType === "both";
         function jobIsUpscale(j) { return isUpscale && j.type.includes("upsample") }
-        function jobIsDiffusion(j) { return isDiffusion && j.type.includes("diffusion") }
+        function jobIsDiffusion(j) { return isDiffusion && (j.type.includes("diffusion") || j.type.includes("outpaint")) }
         async function* gen() {
           let pendingJobs = [];
           for (const d of days) {
             if (progressState.cancelClicked) return;
             const dayJobs = await getJobsByDay(d);
-            const filteredDayJobs = dayJobs.filter(j => jobIsUpscale(j) || jobIsDiffusion(j));
+            const filteredDayJobs = dayJobs.filter(j => isBoth || jobIsUpscale(j) || jobIsDiffusion(j));
             progressState.processedDays += 1;
             progressState.totalJobs += filteredDayJobs.length;
             setProgress(progressState);
