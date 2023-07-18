@@ -404,6 +404,7 @@ async function addDownloadBar(overlayId){
         const jsonlStream = new fflate.EncodeUTF8((data, final) => {
           jsonlFile.push(data, final);
         });
+        let errorStream = null;
 
         // update UI a bit
         downloadButtonWrapper.classList.remove("bg-blue-900");
@@ -417,8 +418,15 @@ async function addDownloadBar(overlayId){
         await Promise.all(processors.map(async (z) => {
           for await (const res of z) {
             if (res.error) {
+              if (errorStream === null) {
+                const errorFile = new fflate.ZipDeflate(zipFilename+"/error.log");
+                zipper.add(errorFile);
+                errorStream = new fflate.EncodeUTF8((data, final) => {
+                  errorFile.push(data, final);
+                });
+              }
+              errorStream.push(new Date().toString() + " " + res.error + "\n");
               log("Got error: ", res.error);
-              // TODO write to an error manifest?
               progressState.processedImages += 1;
               setProgress(progressState);
               continue;
@@ -442,6 +450,7 @@ async function addDownloadBar(overlayId){
 
         log("All done!");
         jsonlStream.push('', true);
+        if (errorStream) errorStream.push('', true);
         zipper.end();
 
       })();
