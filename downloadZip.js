@@ -45,6 +45,10 @@ function processJob({imageFormat, isDiffusion, progressState}) {
   return async function*(iterator) {
     for await (const jobInfo of iterator) {
       if (progressState.cancelClicked) return;
+      if (imageFormat === "jsonl") {
+        yield { job: jobInfo };
+        continue;
+      }
       try {
       const imageURL = setDiffusion(setExtension(jobInfo.image_paths[0]));
       const imageData = await imageUrlToBase64(imageURL);
@@ -255,13 +259,14 @@ async function addDownloadBar(overlayId){
       label.className = "px-2";
       return [input, label];
     }
-    // png / webp
+    // png / webp / json
     const imgFormatName = "imgFormat";
     const imgFormatDesc = textSpan("Image Format");
     imgFormatDesc.innerText = "Image Format";
     const [ pngInput, pngText] = addRadio("png", imgFormatName, "PNG");
     const [ webpInput, webpText] = addRadio("webp", imgFormatName, "WebP", true);
-    const imgFormatInputs = divE(webpInput, webpText, pngInput, pngText);
+    const [ jsonlInput, jsonlText] = addRadio("jsonl", imgFormatName, "JSONL");
+    const imgFormatInputs = divE(webpInput, webpText, pngInput, pngText, jsonlInput, jsonlText);
 
     // upscales / grids / both
     const jobTypeName = "jobType";
@@ -394,6 +399,11 @@ async function addDownloadBar(overlayId){
             progressState.isRunning = false;
           }
         });
+        const jsonlFile = new fflate.ZipDeflate(zipFilename+"/metadata.jsonl");
+        zipper.add(jsonlFile);
+        const jsonlStream = new fflate.EncodeUTF8((data, final) => {
+          jsonlFile.push(data, final);
+        });
 
         // update UI a bit
         downloadButtonWrapper.classList.remove("bg-blue-900");
@@ -413,6 +423,13 @@ async function addDownloadBar(overlayId){
               setProgress(progressState);
               continue;
             }
+            jsonlStream.push(JSON.stringify(res.job) + "\n");
+            if (imageFormat === "jsonl") {
+              // skip if expecting only json
+              progressState.processedImages += 1;
+              setProgress(progressState);
+              continue;
+            }
             const imageFile = new fflate.ZipPassThrough(zipFilename+"/"+res.filename);
             imageFile.mtime = new Date(res.mtime + " UTC");
             zipper.add(imageFile);
@@ -424,6 +441,7 @@ async function addDownloadBar(overlayId){
         }));
 
         log("All done!");
+        jsonlStream.push('', true);
         zipper.end();
 
       })();

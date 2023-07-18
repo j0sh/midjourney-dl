@@ -84,7 +84,7 @@ async function embedMetadata(request, sender, sendResponse){
 
   const mtime = j.enqueue_time;
 
-  sendResponse({res: "ok", enrichedImage: pData, filename: fname, mtime: mtime});
+  sendResponse({res: "ok", enrichedImage: pData, filename: fname, mtime: mtime, job: j});
 }
 
 let mouseOverImage = "";
