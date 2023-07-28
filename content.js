@@ -351,6 +351,15 @@ async function getJob(jobId){
   }
 }
 
+async function getJobsFromList(jobIds) {
+  // the `getJob` function returns an object if a single jobId is passed in, even if it's a list with a single jobId
+  // normalize this to always return a list
+  const jobs = await getJob(jobIds);
+  if (!jobs) return [];
+  if (Array.isArray(jobs)) return jobs;
+  return [ jobs ];
+}
+
 // download request for an individal image
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   (async () => {

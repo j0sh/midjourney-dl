@@ -336,7 +336,7 @@ async function addDownloadBar(overlayId){
             while (pendingJobs.length >= maxJobs) {
               if (progressState.cancelClicked) return;
               const jobsToCheck = pendingJobs.splice(0, maxJobs);
-              const j = [... await getJob(jobsToCheck.map(j => j.id))];
+              const j = [... await getJobsFromList(jobsToCheck.map(j => j.id))];
               progressState.processedJobs += j.length;
               setProgress(progressState);
               if (progressState.cancelClicked) return;
@@ -345,7 +345,7 @@ async function addDownloadBar(overlayId){
           }
           // fetch remainder
           if (pendingJobs.length <= 0 || progressState.cancelClicked) return;
-          const j = [... await getJob(pendingJobs.map(j => j.id))];
+          const j = [... await getJobsFromList(pendingJobs.map(j => j.id))];
           progressState.processedJobs += j.length;
           setProgress(progressState);
           if (progressState.cancelClicked) return;
@@ -536,7 +536,7 @@ async function addDownloadBar(overlayId){
     }
     return [...missingJobs];
   }
-  const jobStatusRequest = getJob(jobsThatNeedAStatus());
+  const jobStatusRequest = getJobsFromList(jobsThatNeedAStatus());
 
   const ts = new Date().getTime();
   const overlayId = "transfixProgressOverlay" + ts;
