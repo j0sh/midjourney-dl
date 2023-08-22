@@ -212,7 +212,8 @@ async function getJobs () {
 }
 
 // populate jobs on initial load
-getJobs();
+// Disable for now. Not really necessary and counts against rate limit
+// getJobs();
 
 // Function to attach event handler
 const bla = {};
@@ -248,7 +249,8 @@ function handleMutation(mutationsList) {
   // Reset jobs if necessary; SPA changes the contents and URL but doesn't reload
   if (oldHref !== document.location.href) {
     oldHref = document.location.href;
-    getJobs();
+    // Disable for now. Not really necessary and counts against rate limit
+    //getJobs();
   }
 
   mutationsList.forEach(function(mutation) {
