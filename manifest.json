@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Download Midjourney Images And Prompts",
   "description": "Download Midjourney images with prompts in metadata",
-  "version": "1.7",
+  "version": "1.8",
   "action": {
     "default_icon": "icon-128.png",
     "default_title": "Download all Midjourney images with prompts as metadata"
