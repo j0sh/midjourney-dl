@@ -79,8 +79,9 @@ async function embedMetadata(request, sender, sendResponse){
   const pData = await uint8ArrayToBase64(p);
 
   const name = `${j.username}_${(j.prompt || "").toLowerCase()}`.replace(/[^a-zA-Z0-9 \.\-_]/g, '').replace(/ /g, '_');
+  const idx = j.split_index !== undefined ? '_'+j.split_index : ''; // indicate position if part of split grid
   const ext = imageURL.split(".").at(-1);
-  const fname = `${name.substring(0, 100 - j.id.length - 1)}_${j.id}.${ext}`;
+  const fname = `${name.substring(0, 100 - j.id.length - 1)}_${j.id}${idx}.${ext}`;
 
   const mtime = j.enqueue_time;
 

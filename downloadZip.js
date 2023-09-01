@@ -25,6 +25,22 @@ function removeOverlay(overlayId){
   return function() { document.getElementById(overlayId).remove() };
 }
 
+function splitJobs(jobs) {
+  // for split grids, take each image and give it its own "job"
+  // TODO this modifies the midjourney metadata which then
+  // shows up in the download. we might not want to do this?
+  const splitJobs = [];
+  jobs.forEach(j => {
+    const isGrid = j.image_paths.length > 1;
+    j.image_paths.forEach((image, index) => {
+      const c = { ...j, image_paths: [ image ] };
+      if (isGrid) c.split_index = index;
+      splitJobs.push(c);
+    });
+  });
+  return splitJobs;
+}
+
 function processJob({imageFormat, isDiffusion, progressState}) {
   function setExtension(imageURL) {
     const rgx = /(\.[a-z]{3}[a-z]?)?$/i; // matches dot+3/4 chars if dot exists
@@ -55,7 +71,7 @@ function processJob({imageFormat, isDiffusion, progressState}) {
       const resp = await chrome.runtime.sendMessage({
         job: jobInfo, imageURL: imageURL, imageDataURL: imageData
       });
-      log("embed", jobInfo.id, resp.res);
+      log("embed", imageURL, resp.res);
       yield resp;
       } catch(e) {
         yield { error: e }
@@ -183,7 +199,7 @@ async function addDownloadBar(overlayId){
       if (progressState && progressState.processedDays) {
         v1.innerText = `${progressState.processedDays} / ${progressState.totalDays} `;
         v2.innerText = `${progressState.processedJobs} / ${progressState.totalJobs}`;
-        v3.innerText = `${progressState.processedImages} / ${progressState.totalJobs}`;
+        v3.innerText = `${progressState.processedImages} / ${progressState.totalImages}`;
         z3.classList.remove("hidden");
         h1.classList.add("hidden");
         return;
@@ -215,6 +231,7 @@ async function addDownloadBar(overlayId){
   const progressState = {
     totalDays: 0,
     totalJobs: 0,
+    totalImages: 0,
     processedDays: 0,
     processedJobs: 0,
     processedImages: 0,
@@ -268,14 +285,15 @@ async function addDownloadBar(overlayId){
     const [ jsonlInput, jsonlText] = addRadio("jsonl", imgFormatName, "JSONL");
     const imgFormatInputs = divE(webpInput, webpText, pngInput, pngText, jsonlInput, jsonlText);
 
-    // upscales / grids / both
+    // upscales / grids / both / splits
     const jobTypeName = "jobType";
     const jobTypeDesc = textSpan("Job Type");
     const [ gridInput, gridLabel ] = addRadio("grid", jobTypeName, "Grid");
     const [ upscaleInput, upscaleLabel] = addRadio("upscale", jobTypeName, "Upscale", true);
     const [ bothInput, bothLabel ] = addRadio("both", jobTypeName, "Both");
+    const [ splitInput, splitLabel ] = addRadio("split", jobTypeName, "Split Grid");
 
-    const jobTypeInputs = divE(upscaleInput, upscaleLabel, gridInput, gridLabel, bothInput, bothLabel);
+    const jobTypeInputs = divE(upscaleInput, upscaleLabel, gridInput, gridLabel, bothInput, bothLabel, splitInput, splitLabel);
 
     const f = document.createElement("form");
     f.id = overlayId+"_form";
@@ -316,8 +334,9 @@ async function addDownloadBar(overlayId){
           log(name, ":", value);
         }
 
+        const isSplit = jobType === "split";
         const isUpscale = jobType === "upscale" || jobType === "both";
-        const isDiffusion = jobType === "grid" || jobType === "both";
+        const isDiffusion = jobType === "grid" || jobType === "both" || isSplit;
         const isBoth = jobType === "both";
         function jobIsUpscale(j) { return isUpscale && j.type.includes("upsample") }
         function jobIsDiffusion(j) { return isDiffusion && (j.type.includes("diffusion") || j.type.includes("outpaint")) }
@@ -337,19 +356,23 @@ async function addDownloadBar(overlayId){
               if (progressState.cancelClicked) return;
               const jobsToCheck = pendingJobs.splice(0, maxJobs);
               const j = [... await getJobsFromList(jobsToCheck.map(j => j.id))];
+              const expandedJobs = isSplit ? splitJobs(j) : j;
               progressState.processedJobs += j.length;
+              progressState.totalImages += expandedJobs.length;
               setProgress(progressState);
               if (progressState.cancelClicked) return;
-              yield* j;
+              yield* expandedJobs;
             }
           }
           // fetch remainder
           if (pendingJobs.length <= 0 || progressState.cancelClicked) return;
           const j = [... await getJobsFromList(pendingJobs.map(j => j.id))];
+          const expandedJobs = isSplit ? splitJobs(j) : j;
           progressState.processedJobs += j.length;
+          progressState.totalImages += expandedJobs.length;
           setProgress(progressState);
           if (progressState.cancelClicked) return;
-          yield* j;
+          yield* expandedJobs;
         }
         const jobIter = gen();
         const pj = processJob({imageFormat, isDiffusion, progressState});
