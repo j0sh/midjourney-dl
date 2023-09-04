@@ -41,7 +41,7 @@ function splitJobs(jobs) {
   return splitJobs;
 }
 
-function processJob({imageFormat, isDiffusion, progressState}) {
+function processJob({imageFormat, isDiffusion, isSplit, progressState}) {
   function setExtension(imageURL) {
     const rgx = /(\.[a-z]{3}[a-z]?)?$/i; // matches dot+3/4 chars if dot exists
     if (imageFormat === "webp") {
@@ -54,7 +54,7 @@ function processJob({imageFormat, isDiffusion, progressState}) {
     return imageURL;
   }
   function setDiffusion(imageURL){
-    if (!isDiffusion) return imageURL;
+    if (!isDiffusion || isSplit) return imageURL;
     const ext = "." + imageFormat;
     return imageURL.replace("0_0"+ext, "grid_0"+ext);
   }
@@ -375,7 +375,7 @@ async function addDownloadBar(overlayId){
           yield* expandedJobs;
         }
         const jobIter = gen();
-        const pj = processJob({imageFormat, isDiffusion, progressState});
+        const pj = processJob({imageFormat, isDiffusion, isSplit, progressState});
         const processors = new Array(3).fill(jobIter).map(pj);
 
         // Set up local file storage
