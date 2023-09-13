@@ -5,6 +5,7 @@ writer.js
 dist/
 releases/
 fflate*
+client-zip.js
 
 # vim
 *.swp

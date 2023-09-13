@@ -22,7 +22,7 @@
     }
   ],
   "web_accessible_resources": [{
-      "resources": [ "fflate.js" ],
+      "resources": [ "client-zip.js", "fflate.js" ],
       "matches": [ "https://www.midjourney.com/*" ]
   }],
   "content_security_policy": {

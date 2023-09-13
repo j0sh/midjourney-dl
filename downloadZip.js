@@ -11,6 +11,72 @@ async function getJobsByDay(date, userId){
   if (found && found.length >= 2) params["userId"] = found[1];
   return await fetchURLWithParams(url, params);
 }
+
+function makeGenerator () {
+  let resolver = (arg0) => { };
+  const promise = new Promise(resolve => resolver = resolve);
+  let closer = (arg0) => { };
+  const closePromise = new Promise(resolve => closer = resolve);
+  const g = { resolver, promise, pending: [], closer, closePromise };
+  function addFn(v) {
+    g.pending.push(v);
+    if (g.pending.length === 1) g.resolver(true);
+  }
+  function closeFn() {
+    g.closer(false);
+  }
+  async function* generatorFn() {
+    let r = await Promise.race([g.promise, g.closePromise]);
+    // if !r we still want to flush pending
+    while (r || g.pending.length > 1) {
+      // NB sensitive to ordering between yield and reset here!
+      const pending = g.pending;
+      g.pending = [];
+      yield* pending;
+      g.promise = new Promise(resolve => {
+        g.resolver = resolve;
+      });
+      if (!r) break;
+      r = await Promise.race([g.promise, g.closePromise]);
+    }
+  }
+  return [addFn, closeFn, generatorFn()];
+};
+
+async function makeFileHandle() {
+  // Set up local file storage
+  const ts = new Date().getTime();
+  const today = new Date().toISOString().split("T")[0];
+  const zipName = `midjourneyDownload_${today}_${ts}`;
+  const fileHandle = await window.showSaveFilePicker({
+    suggestedName: zipName+".zip",
+    types: [{
+      description: 'Zip',
+      accept: {
+        'application/zip': ['.zip'],
+      },
+    }],
+  });
+  return await fileHandle.createWritable();
+}
+
+async function makeZipper(){
+  const writable = await makeFileHandle();
+  // Set up zip stuff
+  // TODO bundle
+  const src = chrome.runtime.getURL('client-zip.js');
+  const zzz = await import(src);
+  const [ pusher, closer, generator ] = makeGenerator();
+  const z = zzz.makeZip(generator).pipeTo(writable);
+  return {
+    push: pusher,
+    close: async function(){
+      closer();
+      await z;
+    }
+  };
+}
+
 function addOverlay(overlayId){
   const d = document.createElement("div");
   d.style = "position: fixed; top: 0; right: 0; background-color: rgb(248 113 113);  padding: 1em; z-index: 1000";
@@ -378,56 +444,10 @@ async function addDownloadBar(overlayId){
         const pj = processJob({imageFormat, isDiffusion, isSplit, progressState});
         const processors = new Array(3).fill(jobIter).map(pj);
 
-        // Set up local file storage
-        const ts = new Date().getTime();
-        const overlayId = "transfixProgressOverlay" + ts;
-        const today = new Date().toISOString().split("T")[0];
-        const zipName = `midjourneyDownload_${today}_${ts}`;
-        const fileHandle = await window.showSaveFilePicker({
-          suggestedName: zipName+".zip",
-          types: [{
-            description: 'Zip',
-            accept: {
-              'application/zip': ['.zip'],
-            },
-          }],
-        });
+        const zipper = await makeZipper();
 
-        // Set up zip stuff
-        // TODO bundle
-        const src = chrome.runtime.getURL('fflate.js');
-        const fflate = await import(src);
-        const writable = await fileHandle.createWritable();
-        const file = await fileHandle.getFile();
-        const fileParts = file.name.split("."); // accommodate filenames w multiple dots
-        if (fileParts.length > 1) fileParts.pop(); // remove .zip extension
-        const zipFilename = fileParts.join(".");
-        const zipper = new fflate.Zip((err, dat, final) => {
-          if (err) {
-            log("zip error", err);
-            return;
-          }
-          // TODO does this need to be awaited ?
-          writable.write(dat);
-          if (final) {
-            // TODO awaited ?
-            writable.close();
-            downloadButtonWrapper.style.color = "";
-            downloadButtonWrapper.classList.add("text-slate-100");
-            downloadButtonWrapper.style.backgroundColor = "";
-            downloadButtonWrapper.classList.add("bg-blue-900");
-            downloadButtonWrapper.transition = "background 1s ease-out";
-            downloadButtonWrapper.innerText = progressState.cancelClicked ? "Download Canceled" : "Download Complete";
-            setCancelButton("Close");
-            progressState.isRunning = false;
-          }
-        });
-        const jsonlFile = new fflate.ZipDeflate(zipFilename+"/metadata.jsonl");
-        zipper.add(jsonlFile);
-        const jsonlStream = new fflate.EncodeUTF8((data, final) => {
-          jsonlFile.push(data, final);
-        });
-        let errorStream = null;
+        const jsonlData = [];
+        const errorData = [];
 
         // update UI a bit
         downloadButtonWrapper.classList.remove("bg-blue-900");
@@ -441,40 +461,46 @@ async function addDownloadBar(overlayId){
         await Promise.all(processors.map(async (z) => {
           for await (const res of z) {
             if (res.error) {
-              if (errorStream === null) {
-                const errorFile = new fflate.ZipDeflate(zipFilename+"/error.log");
-                zipper.add(errorFile);
-                errorStream = new fflate.EncodeUTF8((data, final) => {
-                  errorFile.push(data, final);
-                });
-              }
-              errorStream.push(new Date().toString() + " " + res.error + "\n");
+              errorData.push(new Date().toString() + " " + res.error + "\n");
               log("Got error: ", res.error);
               progressState.processedImages += 1;
               setProgress(progressState);
               continue;
             }
-            jsonlStream.push(JSON.stringify(res.job) + "\n");
+            jsonlData.push(JSON.stringify(res.job));
             if (imageFormat === "jsonl") {
               // skip if expecting only json
               progressState.processedImages += 1;
               setProgress(progressState);
               continue;
             }
-            const imageFile = new fflate.ZipPassThrough(zipFilename+"/"+res.filename);
-            imageFile.mtime = new Date(res.mtime + " UTC");
-            zipper.add(imageFile);
-            const enrichedImage = new Uint8Array(await (await fetch(res.enrichedImage)).arrayBuffer());
-            imageFile.push(enrichedImage, true);
+            const name = res.filename;
+            const lastModified = new Date(res.mtime + " UTC");
+            const input = await (await fetch(res.enrichedImage)).arrayBuffer();
+            zipper.push({ name, lastModified, input })
             progressState.processedImages += 1;
             setProgress(progressState);
           }
         }));
 
-        log("All done!");
-        jsonlStream.push('', true);
-        if (errorStream) errorStream.push('', true);
-        zipper.end();
+
+        // Update UI to reflect completing state
+        downloadButtonWrapper.innerText = progressState.cancelClicked ? 'Cancelling...' : 'Completing...';
+
+        // Collect jsonl and error lines, push to zip and close
+        zipper.push({name: "metadata.jsonl", input: jsonlData.join("\n") });
+        if (errorData.length > 0) zipper.push({name: "error.log", input: errorData.join("\n") });
+        await zipper.close();
+
+        // Update UI to reflect completed state
+        downloadButtonWrapper.style.color = "";
+        downloadButtonWrapper.classList.add("text-slate-100");
+        downloadButtonWrapper.style.backgroundColor = "";
+        downloadButtonWrapper.classList.add("bg-blue-900");
+        downloadButtonWrapper.transition = "background 1s ease-out";
+        downloadButtonWrapper.innerText = progressState.cancelClicked ? "Download Canceled" : "Download Complete";
+        setCancelButton("Close");
+        progressState.isRunning = false;
 
       })();
       return false;
