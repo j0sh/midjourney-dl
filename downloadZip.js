@@ -560,10 +560,6 @@ async function addDownloadBar(overlayId){
     return;
   }
 
-  // TODO bundle
-  const src = chrome.runtime.getURL('fflate.js');
-  const fflate = await import(src);
-
   const imagesToDownload = document.querySelectorAll('img[data-job-id]');
   log("Processing ", imagesToDownload.length, "images");
   if (imagesToDownload.length <= 0) {
@@ -587,39 +583,9 @@ async function addDownloadBar(overlayId){
   }
   const jobStatusRequest = getJobsFromList(jobsThatNeedAStatus());
 
-  const ts = new Date().getTime();
-  const overlayId = "transfixProgressOverlay" + ts;
-  const today = new Date().toISOString().split("T")[0];
-  const zipName = `midjourneyDownload_${today}_${ts}`;
-  const fileHandle = await window.showSaveFilePicker({
-    suggestedName: zipName+".zip",
-    types: [{
-      description: 'Zip',
-      accept: {
-        'application/zip': ['.zip'],
-      },
-    }],
-  });
+  const overlayId = "transfixProgressOverlay" + new Date().getTime();
   addOverlay(overlayId);
-  const writable = await fileHandle.createWritable();
-  const file = await fileHandle.getFile();
-  const fileParts = file.name.split("."); // accommodate filenames w multiple dots
-  if (fileParts.length > 1) fileParts.pop(); // remove .zip extension
-  const fileName = fileParts.join(".");
-  const zipper = new fflate.Zip((err, dat, final) => {
-    if (err) {
-      log("zip error", err);
-      return;
-    }
-    // TODO does this need to be awaited ?
-    writable.write(dat);
-    if (final) {
-      // TODO awaited ?
-      writable.close();
-      updateOverlay(overlayId, "All images downloaded");
-      setTimeout(removeOverlay(overlayId), 5000);
-    }
-  });
+  const zipper = await makeZipper();
 
   let jobCounter = 0;
   const downloadJobs = [...jobs].concat(await jobStatusRequest);
@@ -643,11 +609,10 @@ async function addDownloadBar(overlayId){
       const imageData = await imageUrlToBase64(imageURL)
       const response = await chrome.runtime.sendMessage({job: job, imageURL: imageURL, imageDataURL: imageData});
       log("res", job.id, response.res);
-      const imageFile = new fflate.ZipPassThrough(fileName+"/"+response.filename);
-      imageFile.mtime = new Date(response.mtime + " UTC");
-      zipper.add(imageFile);
-      const enrichedImage = new Uint8Array(await (await fetch(response.enrichedImage)).arrayBuffer());
-      imageFile.push(enrichedImage, true);
+      const name = response.filename;
+      const lastModified = new Date(response.mtime + " UTC");
+      const input = await (await fetch(response.enrichedImage)).arrayBuffer();
+      zipper.push({ name, lastModified, input });
       jobCounter++;
       updateOverlay(overlayId, `Processed ${jobCounter} / ${imagesToDownload.length} images`);
     }
@@ -658,9 +623,11 @@ async function addDownloadBar(overlayId){
   const workers = new Array(concurrency).fill(iterator).map(processImage);
   const start = new Date();
   await Promise.all(workers);
+  await zipper.close();
   const end = new Date();
 
   log("Elapsed=", end - start, "concurrency=", concurrency);
+  updateOverlay(overlayId, "All images downloaded");
+  setTimeout(removeOverlay(overlayId), 5000);
 
-  zipper.end();
 })();
