@@ -605,6 +605,10 @@ async function addDownloadBar(overlayId){
           return;
         }
       }
+      if (imageElem.getAttribute('data-job-type') === 'grid' && imageElem.getAttribute('data-job-index')) {
+        job = { ... job }; // copy prior to mutation; otherwise we stomp over other grid squares
+        job.split_index = imageElem.getAttribute('data-job-index');
+      }
       const imageURL = imageElem.currentSrc;
       const imageData = await imageUrlToBase64(imageURL)
       const response = await chrome.runtime.sendMessage({job: job, imageURL: imageURL, imageDataURL: imageData});
