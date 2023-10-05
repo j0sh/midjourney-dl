@@ -77,6 +77,43 @@ async function makeZipper(){
   };
 }
 
+async function loadPapaParse(){
+  const src = chrome.runtime.getURL('papaparse.js');
+  const { default:Papa } = await import(src);
+  return Papa;
+}
+
+function makeCSVRow(j){
+  return {
+    "id": j.id,
+    "full_command": j.full_command,
+    "username":j.username,
+    "user_id":j.user_id,
+    "enqueue_time":j.enqueue_time,
+    "type":j.type,
+    "job_type":j._job_type,
+    "image_path_0":j.image_paths[0],
+    "image_path_1":j.image_paths[1] || "",
+    "image_path_2":j.image_paths[2] || "",
+    "image_path_3":j.image_paths[3] || "",
+    "param_version":j._parsed_params.version || "",
+    "param_aspect":j._parsed_params.aspect || "",
+    "param_style":j._parsed_params.style|| "",
+    "param_stylize":j._parsed_params.stylize|| "",
+    "param_tile":j._parsed_params.tile|| "",
+    "param_chaos":j._parsed_params.tile|| "",
+    "param_weird":j._parsed_params.tile|| "",
+    "param_stealth":j._parsed_params.tile|| "",
+    "param_relax":j._parsed_params.tile|| "",
+    "param_turbo":j._parsed_params.tile|| "",
+    "seedImageURL":j.event.seedImageURL || "",
+    "width": j.event.width,
+    "height": j.event.height,
+    "reference_job_id":j.reference_job_id || "",
+    "reference_image_num":j.reference_image_num || "",
+  }
+}
+
 function addOverlay(overlayId){
   const d = document.createElement("div");
   d.style = "position: fixed; top: 0; right: 0; background-color: rgb(248 113 113);  padding: 1em; z-index: 1000";
@@ -127,7 +164,7 @@ function processJob({imageFormat, isDiffusion, isSplit, progressState}) {
   return async function*(iterator) {
     for await (const jobInfo of iterator) {
       if (progressState.cancelClicked) return;
-      if (imageFormat === "jsonl") {
+      if (imageFormat === "jsonl" || imageFormat === "csv") {
         yield { job: jobInfo };
         continue;
       }
@@ -349,7 +386,8 @@ async function addDownloadBar(overlayId){
     const [ pngInput, pngText] = addRadio("png", imgFormatName, "PNG", true);
     const [ webpInput, webpText] = addRadio("webp", imgFormatName, "WebP");
     const [ jsonlInput, jsonlText] = addRadio("jsonl", imgFormatName, "JSONL");
-    const imgFormatInputs = divE(webpInput, webpText, pngInput, pngText, jsonlInput, jsonlText);
+    const [ csvInput, csvText] = addRadio("csv", imgFormatName, "CSV");
+    const imgFormatInputs = divE(webpInput, webpText, pngInput, pngText, jsonlInput, jsonlText, csvInput, csvText);
 
     // upscales / grids / both / splits
     const jobTypeName = "jobType";
@@ -445,7 +483,9 @@ async function addDownloadBar(overlayId){
         const processors = new Array(3).fill(jobIter).map(pj);
 
         const zipper = await makeZipper();
+        const papa = await loadPapaParse();
 
+        const csvData   = [];
         const jsonlData = [];
         const errorData = [];
 
@@ -474,6 +514,13 @@ async function addDownloadBar(overlayId){
               setProgress(progressState);
               continue;
             }
+            csvData.push(makeCSVRow(res.job));
+            if (imageFormat === "csv") {
+              // skip if expecting only csv
+              progressState.processedImages += 1;
+              setProgress(progressState);
+              continue;
+            }
             const name = res.filename;
             const lastModified = new Date(res.mtime + " UTC");
             const input = await (await fetch(res.enrichedImage)).arrayBuffer();
@@ -487,8 +534,9 @@ async function addDownloadBar(overlayId){
         // Update UI to reflect completing state
         downloadButtonWrapper.innerText = progressState.cancelClicked ? 'Cancelling...' : 'Completing...';
 
-        // Collect jsonl and error lines, push to zip and close
+        // Collect metadata and error lines, push to zip and close
         zipper.push({name: "metadata.jsonl", input: jsonlData.join("\n") });
+        zipper.push({name: "metadata.csv", input: papa.unparse(csvData)});
         if (errorData.length > 0) zipper.push({name: "error.log", input: errorData.join("\n") });
         await zipper.close();
 

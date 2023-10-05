@@ -2,16 +2,16 @@
 let
 in
 pkgs.mkShell {
-  packages = [ pkgs.emscripten pkgs.clang_12 pkgs.jq pkgs.htmlq pkgs.curl pkgs.nodejs pkgs.yarn ];
+  packages = [ pkgs.emscripten pkgs.clang_12 pkgs.jq pkgs.htmlq pkgs.curl pkgs.nodejs pkgs.yarn pkgs.esbuild ];
   nativeBuildInputs = [ pkgs.pkg-config ];
   shellHooks = ''
-    if ! [ -f fflate.js ]; then
-      curl -o fflate-v0.7.4.tar.gz https://github.com/101arrowz/fflate/archive/refs/tags/v0.7.4.zip
-      tar -xzvf fflate-v0.7.4.tar.gz
-      pushd fflate-0.7.4
-      yarn
-      yarn run build:lib
-      cp esm/browser.js ../fflate.js
+    if ! [ -f papaparse.js ]; then
+      curl -Lo papaparse-v5.4.0.zip "https://github.com/mholt/PapaParse/archive/refs/tags/5.4.0.zip"
+      unzip papaparse-v5.4.0.zip
+      pushd PapaParse-5.4.0
+      echo "export default globalThis.Papa;" >> papaparse.js
+      sed -i "s/function(root,/function(root=window,/" papaparse.js
+      esbuild --minify papaparse.js > ../papaparse.js
       popd
     fi
     if ! [ -f writer.js ]; then

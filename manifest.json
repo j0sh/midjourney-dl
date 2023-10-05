@@ -22,7 +22,7 @@
     }
   ],
   "web_accessible_resources": [{
-      "resources": [ "client-zip.js" ],
+      "resources": [ "client-zip.js", "papaparse.js" ],
       "matches": [ "https://www.midjourney.com/*" ]
   }],
   "content_security_policy": {
