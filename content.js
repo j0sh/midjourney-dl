@@ -376,7 +376,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     log("Found job ", job);
     const elem = document.querySelector('img[data-job-id="'+jobId+'"]');
-    const imageURL = elem.currentSrc;
+    let imageURL = job.image_paths[0];
+    if (elem.getAttribute('data-job-type') === 'grid') {
+      imageURL = imageURL.replace(/\/0_.+\.(webp|png)$/, "/grid_0.png");
+    }
     const imageData = await imageUrlToBase64(imageURL)
     const response = await chrome.runtime.sendMessage({job: job, imageURL: imageURL, imageDataURL: imageData});
     log("got res", response);
