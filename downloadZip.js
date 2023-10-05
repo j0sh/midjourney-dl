@@ -346,8 +346,8 @@ async function addDownloadBar(overlayId){
     const imgFormatName = "imgFormat";
     const imgFormatDesc = textSpan("Image Format");
     imgFormatDesc.innerText = "Image Format";
-    const [ pngInput, pngText] = addRadio("png", imgFormatName, "PNG");
-    const [ webpInput, webpText] = addRadio("webp", imgFormatName, "WebP", true);
+    const [ pngInput, pngText] = addRadio("png", imgFormatName, "PNG", true);
+    const [ webpInput, webpText] = addRadio("webp", imgFormatName, "WebP");
     const [ jsonlInput, jsonlText] = addRadio("jsonl", imgFormatName, "JSONL");
     const imgFormatInputs = divE(webpInput, webpText, pngInput, pngText, jsonlInput, jsonlText);
 
