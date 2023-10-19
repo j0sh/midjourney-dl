@@ -540,9 +540,9 @@ async function addDownloadBar(overlayId){
         downloadButtonWrapper.innerText = progressState.cancelClicked ? 'Cancelling...' : 'Completing...';
 
         // Collect metadata and error lines, push to zip and close
-        zipper.push({name: "metadata.jsonl", input: jsonlData.join("\n") });
+        zipper.push({name: "metadata.jsonl", input: jsonlData.join("\n")+"\n" });
         zipper.push({name: "metadata.csv", input: papa.unparse(csvData)});
-        if (errorData.length > 0) zipper.push({name: "error.log", input: errorData.join("\n") });
+        if (errorData.length > 0) zipper.push({name: "error.log", input: errorData.join("\n")+"\n" });
         await zipper.close();
 
         // Update UI to reflect completed state
