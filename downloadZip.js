@@ -447,7 +447,7 @@ async function addDownloadBar(overlayId){
         const isUpscale = jobType === "upscale" || jobType === "both";
         const isDiffusion = jobType === "grid" || jobType === "both" || isSplit;
         const isBoth = jobType === "both";
-        function jobIsUpscale(j) { return isUpscale && j.type.includes("upsample") }
+        function jobIsUpscale(j) { return isUpscale && (j.type.includes("upsample") || j.type.includes("upscale")) }
         function jobIsDiffusion(j) { return isDiffusion && (j.type.includes("diffusion") || j.type.includes("outpaint")) }
         async function* gen() {
           let pendingJobs = [];
