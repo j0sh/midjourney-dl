@@ -87,7 +87,7 @@ async function getArchiveDateRanges() {
     return undefined;
   }
   const suffix = pathname.replace(/archive\/?$/, "archive.json");
-  const url = `https://www.midjourney.com/_next/data/${buildId}${suffix}`
+  const url = `https://legacy.midjourney.com/_next/data/${buildId}${suffix}`
   const body = await fetchURLWithParams(url, {});
   return body.pageProps.days;
 }
@@ -109,7 +109,7 @@ async function getJobs () {
       return [];
     }
 
-    const jobStatusURL = "https://www.midjourney.com/api/app/job-status";
+    const jobStatusURL = "https://legacy.midjourney.com/api/app/job-status";
     const jobStatus = await fetch(jobStatusURL, {
       method: "POST",
       headers: {"content-type": "application/json"},
@@ -123,7 +123,7 @@ async function getJobs () {
     // Add the current page as a job
     jobs.push(job);
 
-    const searchURL = new URL("https://www.midjourney.com/api/app/vector-search/");
+    const searchURL = new URL("https://legacy.midjourney.com/api/app/vector-search/");
     const imgPath = job.image_paths[0].replace("https://storage.googleapis.com/dream-machines-output", "https://cdn.midjourney.com").replace(/\.png$/i, ".webp");
     const params = {
       "amount": "50",
@@ -144,7 +144,7 @@ async function getJobs () {
     jobs.push(...body);
     log("Jobs are now", jobs);
   } else if (pathname === "/app/feed/") {
-    const recentJobsURL = new URL("https://www.midjourney.com/api/app/recent-jobs/");
+    const recentJobsURL = new URL("https://legacy.midjourney.com/api/app/recent-jobs/");
     const params = {
       "amount": "35",
       "dedupe":"true",
@@ -176,11 +176,11 @@ async function getJobs () {
   } else if (pathname === "/app/") {
       log("In user homepage");
       // first get user id
-      const userSessionURL = new URL("https://www.midjourney.com/api/auth/session/");
+      const userSessionURL = new URL("https://legacy.midjourney.com/api/auth/session/");
       const userInfo = await fetchURLWithParams(userSessionURL, {});
       if (!userInfo) return [];
       // at the user's homepage
-      const recentJobsURL = new URL("https://www.midjourney.com/api/app/recent-jobs/");
+      const recentJobsURL = new URL("https://legacy.midjourney.com/api/app/recent-jobs/");
       const params = {
         "amount": "35",
         "dedupe":"true",
@@ -332,7 +332,7 @@ async function getJob(jobId){
       return;
     }
     const jobIds = Array.isArray(jobId) ? jobId : [ jobId ]
-    const jobStatusURL = "https://www.midjourney.com/api/app/job-status/";
+    const jobStatusURL = "https://legacy.midjourney.com/api/app/job-status/";
     const jobStatus = await fetch(jobStatusURL, {
       method: "POST",
       headers: {"content-type": "application/json"},

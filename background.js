@@ -51,7 +51,7 @@ chrome.contextMenus.removeAll(function() {
     id: AllImagesContextMenuID,
     title: "Save All Images On Page",
     contexts:["page", "image"],  // ContextType
-    documentUrlPatterns: ["https://www.midjourney.com/*"],
+    documentUrlPatterns: ["https://legacy.midjourney.com/*"],
   });
 })
 
@@ -101,7 +101,7 @@ async function storeMouseOver(request, sender, sendResponse) {
       id: SingleImageContextMenuID,
       title: "Save Single Image",
       contexts:["page", "image"],  // ContextType
-      documentUrlPatterns: ["https://www.midjourney.com/*"],
+      documentUrlPatterns: ["https://legacy.midjourney.com/*"],
     });
   }
   sendResponse(); // send empty response to suppress errors in the console

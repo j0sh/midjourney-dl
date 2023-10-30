@@ -1,5 +1,5 @@
 async function getJobsByDay(date, userId){
-  const url = new URL("https://www.midjourney.com/api/app/archive/day/");
+  const url = new URL("https://legacy.midjourney.com/api/app/archive/day/");
   const params = {
     "day": date.d,
     "month": date.m,

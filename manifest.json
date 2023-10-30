@@ -17,13 +17,13 @@
     {
       "js":["content.js"],
       "matches":[
-        "https://www.midjourney.com/*"
+        "https://legacy.midjourney.com/*"
       ]
     }
   ],
   "web_accessible_resources": [{
       "resources": [ "client-zip.js", "papaparse.js" ],
-      "matches": [ "https://www.midjourney.com/*" ]
+      "matches": [ "https://legacy.midjourney.com/*" ]
   }],
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
