@@ -6,6 +6,9 @@ dist/
 releases/
 fflate*
 client-zip.js
+*.zip
+PapaParse-5.4.0*
+papaparse.js
 
 # vim
 *.swp
